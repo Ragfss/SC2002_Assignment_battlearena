@@ -24,7 +24,7 @@ public class DamageZeroEffect implements StatusEffect {
         if (this.duration >= 0)
         {
             // If so, decrement duration by 1
-            duration -= 1;
+            duration--;
         }
     }
     

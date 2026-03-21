@@ -6,44 +6,58 @@ public class DefenseBoost implements StatusEffect {
     private int duration;
     private static final int BOOST_AMOUNT = 10;
     private static final String EFFECT_NAME = "DefenseBoost";
-    private int originalDefense;
+    private int originalDefence;
     
     public DefenseBoost() {
         // Initialize duration to 2 (current round + next round)
+        this.duration = 2;
     }
     
     @Override
     public int getDuration() {
         // Return the current duration value
+        return this.duration;
     }
     
     @Override
     public void decrementDuration() {
         // Check if duration is greater than 0
-        // If so, decrement duration by 1
+        if (duration > 0)
+        {
+            // If so, decrement duration by 1
+            duration--;
+        }
     }
     
     @Override
     public boolean isExpired() {
         // Return true if duration is less than or equal to 0, false otherwise
+        return (duration <= 0);
     }
     
     @Override
     public void apply(Combatant combatant) {
         // Validate that combatant is not null
-        // If valid, store the combatant's current defense value as original defense
-        // Note: Defense boost is applied dynamically in getDefense() method
+        if (combatant != null)
+        {
+            // If valid, store the combatant's current defense value as original defense
+            // Note: Defense boost is applied dynamically in getDefense() method
+            originalDefence = combatant.getDefense();
+        }
+
     }
     
     @Override
     public void remove(Combatant combatant) {
         // Defense boost is removed when effect expires
         // The combatant's defense returns to original value
+        combatant.setDefense(this.originalDefence);
     }
     
     @Override
     public String getName() {
         // Return the predefined effect name constant
+        return EFFECT_NAME;
     }
     
     /**
@@ -53,5 +67,6 @@ public class DefenseBoost implements StatusEffect {
      */
     public int getBoostAmount() {
         // Return the predefined boost amount constant
+        return BOOST_AMOUNT;
     }
 }
