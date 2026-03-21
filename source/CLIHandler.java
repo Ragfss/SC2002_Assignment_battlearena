@@ -122,10 +122,32 @@ public class CLIHandler {
     }
     
     /**
+     * Displays that Basic Attack damage was nullified by Smoke Bomb.
+     */
+    public void displayNullifiedBasicAttack(String actor, String target, String targetDisplay, int targetHP) {
+        // Display formatted message like:
+        // "Actor -> BasicAttack -> Target: 0 damage (Smoke Bomb active) | TargetDisplay HP: targetHP"
+    }
+    
+    /**
      * Displays status effect application.
      */
     public void displayStatusEffect(String target, String effect, int duration) {
         // Display formatted message showing target is STUNNED with duration in turns
+    }
+    
+    /**
+     * Displays that stun has expired.
+     */
+    public void displayStunExpires() {
+        // Display formatted "Stun expires" message (used by GameManager, not printed directly there)
+    }
+    
+    /**
+     * Displays that Smoke Bomb effect has expired.
+     */
+    public void displaySmokeBombExpires() {
+        // Display formatted "Smoke Bomb effect expires" message (used by GameManager, not printed directly there)
     }
     
     /**
@@ -188,6 +210,51 @@ public class CLIHandler {
         // Add formatted cooldown string to status parts
         
         // Join all status parts with " | " separator and display
+    }
+    
+    /**
+     * Displays Arcane Blast summary across all enemies including kill-based ATK progression and cooldown.
+     */
+    public void displayArcaneBlastSummary(String actor, String actionName, List<String> enemyResults,
+                                          int initialATK, int kills, boolean goblinSurvives, Integer cooldownRounds) {
+        // Display "Actor -> Arcane Blast -> All Enemies: " header
+        // Join and display enemyResults
+        // If kills > 0, display ATK progression (+10 per kill)
+        // If goblinSurvives is true, append "Goblin survives"
+        // If cooldownRounds is not null, display cooldown set message
+        // Otherwise, print newline only
+    }
+    
+    /**
+     * Displays Power Stone trigger header.
+     */
+    public void displayPowerStoneTriggered(String actor, String skillName) {
+        // Display formatted "Actor -> Item -> Power Stone used -> SkillName triggered" message
+    }
+    
+    /**
+     * Displays Arcane Blast result when triggered via Power Stone.
+     */
+    public void displayArcaneBlastPowerStone(String actor, int attackerATK, List<String> enemyResults, int kills, boolean allDefeated) {
+        // Display "-> All Enemies (ATK: X): " prefix
+        // Join and display enemy results
+        // If kills > 0, display ATK progression (+10 per kill)
+        // If allDefeated is true, append "All enemies defeated"
+    }
+    
+    /**
+     * Displays Power Stone consumed with unchanged cooldown.
+     */
+    public void displayPowerStoneConsumedAndCooldownUnchanged(int cooldownRounds) {
+        // Display "Power Stone consumed" text
+        // Then display cooldown unchanged message through existing cooldown format
+    }
+    
+    /**
+     * Displays a newline.
+     */
+    public void displayNewline() {
+        // Print a newline (used to keep formatting logic inside UI layer)
     }
     
     /**

@@ -180,6 +180,9 @@ public class GameManager {
      * Executes an action and displays the result in PRD format.
      */
     private void executeActionWithDisplay(Combatant source, Action action, String actionName, List<Combatant> targets) {
+        // NOTE: UI must be fully separated from battle logic.
+        // This method should compute result data and delegate ALL output to CLIHandler methods.
+        // Do NOT use direct System.out printing here.
         // Get display name for the source combatant
         
         // If action is BasicAttack:
@@ -192,7 +195,7 @@ public class GameManager {
                 // Calculate damage (max of 0 and attacker ATK - target DEF)
                 // Check if target has DamageNullifier effect, set damage to 0 if so
                 // Display action result using CLI handler
-                // If damage was nullified and target is alive, display nullifier message
+                // If damage was nullified and target is alive, call CLIHandler.displayNullifiedBasicAttack(...)
         
         // Else if action is ShieldBash:
             // Get first target from targets list
@@ -200,24 +203,20 @@ public class GameManager {
                 // Capture HP before, calculate damage
                 // Execute action through battle engine
                 // Display action result
-                // If target is alive and has Stun effect, display stun message
-                // Display cooldown message (or newline if no cooldown tracker)
+                // If target is alive and has Stun effect, display through CLIHandler.displayStatusEffect(...)
+                // Display cooldown via CLI handler (or CLIHandler.displayNewline if no cooldown tracker)
         
         // Else if action is ArcaneBlast:
             // Get attacker's ATK stat
             // Create map to store HP before for all targets
             // Execute action through battle engine
-            // Display "Actor -> Arcane Blast -> All Enemies: " header
             // Initialize kill counter and result strings list
             // Track if any Goblin survives
             // Iterate through targets:
                 // Calculate HP after, damage, format damage calculation string
                 // If target eliminated, add eliminated message and increment kills
                 // Otherwise, add damage message and check if Goblin survived
-            // Join and display all enemy results
-            // If kills occurred, display ATK buff progression (+10 per kill)
-            // If Goblin survived, display "Goblin survives" message
-            // Display cooldown message (or newline if no cooldown tracker)
+            // Delegate final Arcane Blast output to CLIHandler.displayArcaneBlastSummary(...)
         
         // Else if action is Defend:
             // Execute action through battle engine
@@ -239,6 +238,8 @@ public class GameManager {
      * Uses an item for the player.
      */
     private void useItem(Combatant player, Item item) {
+        // NOTE: Keep all printing in CLIHandler only.
+        // This method should only coordinate logic + call CLI display methods.
         // Get display name for player
         
         // If item is Potion:
@@ -258,13 +259,13 @@ public class GameManager {
                 // Determine targets and skill name based on action type:
                     // If ShieldBash: get enemy target selection, set skill name
                     // If ArcaneBlast: set targets to all alive enemies, set skill name
-                // Display Power Stone usage message with skill name
+                // Display Power Stone usage header via CLIHandler.displayPowerStoneTriggered(...)
                 // Capture HP before for all targets
                 // Execute skill action directly (not through executeTurn to avoid cooldown)
                 // Display results based on action type:
-                    // If ShieldBash: display damage and stun if applied
-                    // If ArcaneBlast: display all enemy results, ATK buffs per kill, and "All enemies defeated" if applicable
-                // Display Power Stone consumed and cooldown unchanged message
+                    // If ShieldBash: display damage/stun through CLI handler methods only
+                    // If ArcaneBlast: call CLIHandler.displayArcaneBlastPowerStone(...)
+                // Display Power Stone consumed and cooldown unchanged via CLI handler helper
                 // Manually update status effects for player and all targets (since executeTurn wasn't used)
     }
     
@@ -307,8 +308,9 @@ public class GameManager {
         
         // Update status effects for combatant
         
-        // If combatant had Stun but doesn't have it now, display "Stun expires" message
-        // If combatant had DamageZeroEffect but doesn't have it now, display "Smoke Bomb effect expires" message
+        // If combatant had Stun but doesn't have it now, call CLIHandler.displayStunExpires(...)
+        // If combatant had DamageZeroEffect but doesn't have it now, call CLIHandler.displaySmokeBombExpires(...)
+        // Do not print directly in GameManager
     }
     
     /**
