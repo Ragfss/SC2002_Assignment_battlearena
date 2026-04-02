@@ -7,17 +7,22 @@ import java.util.List;
 public class BasicEnemyStrategy implements EnemyAction {
     @Override
     public Action getAction(Combatant enemy, List<Combatant> availableTargets) {
-        // Validate that enemy and availableTargets are not null and targets list is not empty
-        // If validation fails, return null
-        
-        // Create a new list to store selected targets
-        // Iterate through available targets to find the first alive target
-            // Check if target is not null and is still alive
-            // If found, add target to the list and break out of loop (basic strategy: attack first available target)
-        
-        // Check if no valid targets were found
-        // If no targets found, return null
-        
-        // Return a new BasicAttack action
+        // Validate that enemy and availableTargets are not null and targets list is not empty  
+        if (enemy !=null && availableTargets !=null && !availableTargets.isEmpty()) {
+
+            List<Combatant> targets = new ArrayList<>();
+            for (Combatant target : availableTargets) {
+                if (target !=null && target.isAlive()) {
+                    targets.add(target);
+                    break;
+                }
+            }
+            if (targets.isEmpty()) {
+                return null;
+            }
+
+            return new BasicAttack();
+        }
+        return null;
     }
 }

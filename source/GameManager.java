@@ -169,11 +169,13 @@ public class GameManager {
      * Processes an enemy's turn.
      */
     private void processEnemyTurn(Combatant enemy) {
-        // Get enemy action from battle engine
-        // If action is not null:
-            // Get list of alive players as potential targets
-            // If targets list is not empty:
-                // Execute action with display using first target only (subList 0 to 1)
+        Action action = battleEngine.getEnemyAction(enemy);
+        if (action != null) {
+            List<Combatant> targets = battleEngine.getAlivePlayers();
+            if (!targets.isEmpty()) {
+                executeActionWithDisplay(enemy, action, "BasicAttack", targets.subList(0, 1));
+            }
+        }
     }
     
     /**

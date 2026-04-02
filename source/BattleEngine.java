@@ -177,8 +177,10 @@ public class BattleEngine {
      */
     public Action getEnemyAction(Combatant enemy) {
         // Validate that enemy is not null and is in the enemies list
-        // If validation fails, return null
-        // Otherwise, use enemy action strategy to get action for enemy with alive players as targets
+        if (enemy !=null && enemies.contains(enemy)) {
+            return enemyActionStrategy.getAction(enemy, getAlivePlayers());
+        }
+        return null;
     }
     
     /**
