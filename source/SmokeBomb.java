@@ -7,7 +7,7 @@ public class SmokeBomb implements Item {
     public void use(Combatant user, List<Combatant> targets) {
         if (user == null) return;
         
-        user.addStatusEffect(new DamageZeroEffect(2)); 
+        user.addStatusEffect(new DamageZeroEffect()); 
         System.out.println(user.getName() + " used a Smoke Bomb! Enemy attacks will do 0 damage for 2 turns.");
     }
     
