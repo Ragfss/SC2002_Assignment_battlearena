@@ -3,7 +3,7 @@
  */
 public class Main {
     public static void main(String[] args) {
-        // Create a new GameManager instance
-        // Start the game loop
+        GameManager gameManager = new GameManager();
+        gameManager.start();
     }
 }
