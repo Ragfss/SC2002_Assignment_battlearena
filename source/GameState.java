@@ -1,35 +1,32 @@
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Data Transfer Object representing the current state of the battle.
- * Immutable to ensure UI separation from engine logic (SRP).
- */
+// Snapshot of battle at given moment
+// Used to pass state to UI without showing the actual game objects
 public class GameState {
     private final List<CombatantSnapshot> combatants;
     private final int currentRound;
     private final BattleResult result;
     
     public GameState(List<CombatantSnapshot> combatants, int currentRound, BattleResult result) {
-        // Create a defensive copy of the combatants list
-        // Store the current round and battle result
+        this.combatants = new ArrayList<>(combatants);
+        this.currentRound = currentRound;
+        this.result = result;
     }
     
     public List<CombatantSnapshot> getCombatants() {
-        // Return a defensive copy of the combatants list
+        return new ArrayList<>(combatants);
     }
     
     public int getCurrentRound() {
-        // Return the current round number
+        return currentRound
     }
     
     public BattleResult getResult() {
-        // Return the battle result
+        return result
     }
     
-    /**
-     * Snapshot of a combatant's state at a point in time.
-     */
+    // Copy of a combatant's stats at one point in time
     public static class CombatantSnapshot {
         private final String name;
         private final int currentHP;
@@ -41,48 +38,32 @@ public class GameState {
         private final boolean isAlive;
         
         public CombatantSnapshot(Combatant combatant) {
-            // Copy all combatant properties: name, currentHP, maxHP, attack, defense, speed, isAlive
-            // Initialize activeEffects as a new empty list
-            // Iterate through combatant's active effects
-                // Add each effect's name to the activeEffects list
+            this.name = combatant.getName();
+            this.currentHP = combatant.getCurrentHP();
+            this.maxHP = combatant.getMaxHP();
+            this.attack = combatant.getAttack();
+            this.defense = combatant.getDefense();
+            this.speed = combatant.getSpeed()
+            this.isAlive = combatant.isAlive()
+
+            this.activeEffects = new ArrayList<>();
+            for (StatusEffect effect : combatant.getActiveEffects()) {
+                activeEffects.add(effect.getName());
+            }
         }
         
-        public String getName() {
-            // Return the name
-        }
-        
-        public int getCurrentHP() {
-            // Return the current HP
-        }
-        
-        public int getMaxHP() {
-            // Return the max HP
-        }
-        
-        public int getAttack() {
-            // Return the attack stat
-        }
-        
-        public int getDefense() {
-            // Return the defense stat
-        }
-        
-        public int getSpeed() {
-            // Return the speed stat
-        }
-        
+        public String getName() {return name;}
+        public int getCurrentHP() {return currentHP;}
+        public int getMaxHP() {return maxHP;}
+        public int getAttack() {return attack;}
+        public int getDefense() {return defense;}
+        public int getSpeed() {return speed;}
+        public boolean isAlive(return isAlive;)
         public List<String> getActiveEffects() {
-            // Return a defensive copy of the active effects list
-        }
-        
-        public boolean isAlive() {
-            // Return the isAlive status
+            return new ArrayList<>(activeEffects);
         }
     }
-    
-    /**
-     * Enum representing the result of the battle.
-     */
+
     public enum BattleResult {
         ONGOING,
         VICTORY,
