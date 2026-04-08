@@ -3,10 +3,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Main game manager that orchestrates the battle arena game.
- * Manages the game loop, statistics, and integration between components.
- */
+// Main game loop that linkes BattleEngine, CLIHandler and LevelManager
+// Handles player turns, enemy turns, items and backup spawns
+
 public class GameManager {
     private BattleEngine battleEngine;
     private CLIHandler cliHandler;
@@ -21,153 +20,171 @@ public class GameManager {
     private List<Combatant> initialEnemies; // Track initial enemies separately
     
     public GameManager() {
-        // Create BattleEngine with SpeedOrder and BasicEnemyStrategy
-        // Create CLIHandler instance
-        // Create LevelManager instance
-        // Initialize cooldownTrackers as new empty HashMap
-        // Initialize playerInventories as new empty HashMap
+        this.battleEngine = new BattleEngine(new SpeedOrder(), new BasicEnemyStrategy());
+        this.cliHandler = new CLIHandler();
+        this.levelManager = new LevelManager();
+        this.cooldownTrackers = new HashMap<>();
+        this.playerInventories = new HashMap<>();
     }
     
-    /**
-     * Starts the game loop.
-     */
     public void start() {
-        // Initialize playing flag to true
-        
-        // Loop while playing is true:
-            // Display loading screen using CLI handler
-            // Get player selection from CLI handler
-            // Get difficulty selection from CLI handler
-            
-            // Initialize game with selected player and difficulty
-            
-            // Run the battle loop
-            
-            // Display completion screen
-            
-            // Prompt user for replay and update playing flag
-        
-        // Close CLI handler when done
+        boolean playing = true;
+
+        while (playing) {
+            cliHandler.displayLoadingScreen();
+            player = cliHandler.selectPlayer();
+            Difficulty difficulty = cliHandler.selectDifficulty();
+
+            initializeGame(player, difficulty);
+            runBattle();
+            displayCompletion();
+
+            playing = cliHandler.promptReplay();
+        }
+
+        cliHandler.close();
     }
     
-    /**
-     * Initializes the game with selected player and difficulty.
-     */
     private void initializeGame(Combatant player, Difficulty difficulty) {
-        // Store current difficulty
-        // Set backupSpawned flag to false
-        
-        // Create new inventory list
-        // If player is Warrior:
-            // Add Potion and Smoke Bomb to inventory
-        // Else if player is Wizard:
-            // Add Power Stone and Potion to inventory
-        // Store inventory in playerInventories map with player as key
-        
-        // Create new CooldownTracker for player and store in cooldownTrackers map
-        
-        // Get initial enemies from level manager based on difficulty
-        // Initialize enemy labels in CLI handler with initial enemies
-        // Store initial enemies in allEnemiesEver list (track all enemies including initial)
-        
-        // Create players list and add player to it
-        // Initialize battle engine with players list and initial enemies
-        
-        // Reset roundsSurvived to 0
+        this.currentDifficulty = difficulty;
+        this.backupSpawned = false;
+
+        // set up starting items based on class
+        List<Item> inventory = new ArrayList<>();
+        if (player instanceof Warrior) {
+            inventory.add(new Potion());
+            inventory.add(new SmokeBomb());
+        } 
+        else if (player instanceof Wizard) {
+            inventory.add(new PowerStone());
+            inventory.add(new Potion());
+        }
+        playerInventories.put(player, inventory);
+
+        cooldownTrackers.put(player, new CooldownTracker());
+
+        // spawn initial enemies for this difficulty
+        List<Combatant> enemies = levelManager.getInitialWave(difficulty);
+        cliHandler.initializeEnemyLabels(enemies);
+        this.initialEnemies = enemies;
+        this.allEnemiesEver = new ArrayList<>(enemies);
+
+        List<Combatant> playerList = new ArrayList<>();
+        playerList.add(player);
+        battleEngine.initialize(playerList, enemies);
+
+        this.roundsSurvived = 0;
     }
     
-    /**
-     * Runs the main battle loop.
-     */
     private void runBattle() {
-        // Loop while battle is not over:
-            // Start a new round in battle engine
-            // Update roundsSurvived from battle engine's game state
-            
-            // Check if battle is over after round start, break if so
-            
-            // Display round header with current round number
-            
-            // Get turn order from battle engine
-            
-            // Iterate through each combatant in turn order:
-                // Check if battle is over, break if so
-                
-                // If combatant is not alive:
-                    // Display skipped turn message for eliminated combatant
-                    // Continue to next combatant
-                
-                // If combatant cannot act:
-                    // Check if combatant has Stun effect:
-                        // Display skipped turn message for stunned combatant
-                        // Check and display status effect expiration
-                    // Else if combatant is not alive:
-                        // Display skipped turn message for eliminated combatant
-                        // Check and display status effect expiration
-                        // Check for backup spawn
-                    // Continue to next combatant
-                
-                // Check if battle is over again, break if so
-                
-                // If combatant is a player:
-                    // Process player turn
-                    // Check for backup spawn (in case enemy was eliminated)
-                // Otherwise (enemy):
-                    // Process enemy turn
-                    // Check for backup spawn (in case enemy was eliminated)
-            
-            // Display end of round summary (before decrementing cooldowns)
-            // Update cooldowns after displaying end of round
+        while (!battleEngine.isBattleOver()) {
+            battleEngine.startRound();
+            roundsSurvived = battleEngine.getGameState().getCurrentRound();
+
+            if (battleEngine.isBattleOver()) break;
+
+            cliHandler.displayRoundHeader(roundsSurvived);
+
+            List<Combatant> turnOrder = battleEngine.getTurnOrder();
+
+            for (Combatant combatant : turnOrder) {
+                if (battleEngine.isBattleOver()) break;
+
+                if (!combatant.isAlive()) {
+                    cliHandler.displaySkippedTurn(getDisplayName(combatant), "ELIMINATED");
+                    continue;
+                }
+
+                if (!combatant.canAct()) {
+                    if (combatant.hasStatusEffect("Stun") || combatant.hasStatusEffect("StunEffect")) {
+                        cliHandler.displaySkippedTurn(getDisplayName(combatant), "STUNNED");
+                        checkStatusEffectExpiration(combatant);
+                    } 
+                    else if (!combatant.isAlive()) {
+                        cliHandler.displaySkippedTurn(getDisplayName(combatant), "ELIMINATED");
+                        checkStatusEffectExpiration(combatant);
+                        checkBackupSpawn();
+                    }
+                    continue;
+                }
+
+                if (battleEngine.isBattleOver()) break;
+
+                // player vs enemy turn
+                if (combatant instanceof Warrior || combatant instanceof Wizard) {
+                    processPlayerTurn(combatant);
+                    checkBackupSpawn();
+                } else {
+                    processEnemyTurn(combatant);
+                    checkBackupSpawn();
+                }
+            }
+
+            // shows the summary before ticking cooldowns
+            displayEndOfRound();
+            updateCooldowns();
+        }
     }
-    
-    /**
-     * Processes a player's turn.
-     */
+
     private void processPlayerTurn(Combatant player) {
-        // Get cooldown tracker and inventory for player
-        // Determine if player can use skill (cooldown exists and is available)
-        // Determine if player has items (inventory exists and is not empty)
-        
-        // Get action choice from CLI handler
-        // Initialize action, targets list, and actionName variables
-        
-        // Use switch statement on actionChoice:
-            // Case 1 (Basic Attack):
-                // Get enemy target selection from CLI handler
-                // Add target to targets list
-                // Create BasicAttack action
-                // Set actionName to "BasicAttack"
-            
-            // Case 2 (Defend):
-                // Create Defend
-                // Add player to targets list
-                // Set actionName to "Defend"
-            
-            // Case 3 (Special Skill):
-                // If canUseSkill is true:
-                    // Get special skill action for player
-                    // If action is ShieldBash:
-                        // Set actionName to "Shield Bash"
-                        // Get enemy target selection and add to targets
-                    // Else if action is ArcaneBlast:
-                        // Set actionName to "Arcane Blast"
-                        // Set targets to all alive enemies
-                    // Start cooldown timer
-            
-            // Case 4 (Use Item):
-                // If hasItems is true:
-                    // Get item selection from CLI handler
-                    // Get selected item from inventory
-                    // Use the item
-                    // If item is consumable, remove from inventory
-                    // Return early (item use doesn't go through normal action flow)
-        
-        // If action is not null, execute action with display
+        CooldownTracker tracker = cooldownTrackers.get(player);
+        List<Item> inventory = playerInventories.get(player);
+        boolean canUseSkill = (tracker != null && tracker.isAvailable());
+        boolean hasItems = (inventory != null && !inventory.isEmpty());
+
+        int actionChoice = cliHandler.selectAction(canUseSkill, hasItems);
+        Action action = null;
+        List<Combatant> targets = new ArrayList<>();
+        String actionName = null;
+
+        switch (actionChoice) {
+            case 1: // basic attack
+                Combatant target = cliHandler.selectEnemyTarget(battleEngine.getAliveEnemies());
+                targets.add(target);
+                action = new BasicAttack();
+                actionName = "BasicAttack";
+                break;
+
+            case 2: // defend
+                action = new Defend();
+                targets.add(player);
+                actionName = "Defend";
+                break;
+
+            case 3: // special skill
+                if (canUseSkill) {
+                    action = getSpecialSkillAction(player);
+                    if (action instanceof ShieldBash) {
+                        actionName = "Shield Bash";
+                        Combatant enemyTarget = cliHandler.selectEnemyTarget(battleEngine.getAliveEnemies());
+                        targets.add(enemyTarget);
+                    } 
+                    else if (action instanceof ArcaneBlast) {
+                        actionName = "Arcane Blast";
+                        targets = battleEngine.getAliveEnemies();
+                    }
+                    tracker.startCooldown();
+                }
+                break;
+
+            case 4: // use item
+                if (hasItems) {
+                    int itemIndex = cliHandler.selectItem(inventory);
+                    Item selectedItem = inventory.get(itemIndex);
+                    useItem(player, selectedItem);
+                    if (selectedItem.isConsumable()) {
+                        inventory.remove(itemIndex);
+                    }
+                    return; // items don't go through the normal action flow
+                }
+                break;
+        }
+
+        if (action != null) {
+            executeActionWithDisplay(player, action, actionName, targets);
+        }
     }
-    
-    /**
-     * Processes an enemy's turn.
-     */
+  
     private void processEnemyTurn(Combatant enemy) {
         Action action = battleEngine.getEnemyAction(enemy);
         if (action != null) {
@@ -178,193 +195,341 @@ public class GameManager {
         }
     }
     
-    /**
-     * Executes an action and displays the result in PRD format.
-     */
     private void executeActionWithDisplay(Combatant source, Action action, String actionName, List<Combatant> targets) {
-        // NOTE: UI must be fully separated from battle logic.
-        // This method should compute result data and delegate ALL output to CLIHandler methods.
-        // Do NOT use direct System.out printing here.
-        // Get display name for the source combatant
-        
-        // If action is BasicAttack:
-            // Create map to store HP before damage for each target
-            // Iterate through targets and store HP before if target is alive
-            // Execute action through battle engine
-            // Iterate through targets to display results:
-                // Skip if target is null or HP before not captured
-                // Calculate HP after (0 if eliminated, otherwise current HP)
-                // Calculate damage (max of 0 and attacker ATK - target DEF)
-                // Check if target has DamageNullifier effect, set damage to 0 if so
-                // Display action result using CLI handler
-                // If damage was nullified and target is alive, call CLIHandler.displayNullifiedBasicAttack(...)
-        
-        // Else if action is ShieldBash:
-            // Get first target from targets list
-            // If target is not null and alive:
-                // Capture HP before, calculate damage
-                // Execute action through battle engine
-                // Display action result
-                // If target is alive and has Stun effect, display through CLIHandler.displayStatusEffect(...)
-                // Display cooldown via CLI handler (or CLIHandler.displayNewline if no cooldown tracker)
-        
-        // Else if action is ArcaneBlast:
-            // Get attacker's ATK stat
-            // Create map to store HP before for all targets
-            // Execute action through battle engine
-            // Initialize kill counter and result strings list
-            // Track if any Goblin survives
-            // Iterate through targets:
-                // Calculate HP after, damage, format damage calculation string
-                // If target eliminated, add eliminated message and increment kills
-                // Otherwise, add damage message and check if Goblin survived
-            // Delegate final Arcane Blast output to CLIHandler.displayArcaneBlastSummary(...)
-        
-        // Else if action is Defend:
-            // Execute action through battle engine
-        
-        // Otherwise (generic action):
-            // Execute action through battle engine
+        String sourceName = getDisplayName(source);
+
+        if (action instanceof BasicAttack) {
+            // save HP before so we can show the change
+            Map<Combatant, Integer> hpBefore = new HashMap<>();
+            for (Combatant t : targets) {
+                if (t != null && t.isAlive()) {
+                    hpBefore.put(t, t.getCurrentHP());
+                }
+            }
+
+            battleEngine.executeTurn(source, action, targets);
+
+            for (Combatant t : targets) {
+                if (t == null || !hpBefore.containsKey(t)) continue;
+
+                int before = hpBefore.get(t);
+                int after = t.isAlive() ? t.getCurrentHP() : 0;
+                int damage = Math.max(0, source.getAttack() - t.getDefense());
+
+                // smoke bomb nullifies damage
+                if (t.hasStatusEffect("DamageZeroEffect") || t.hasStatusEffect("SmokeBombInvulnerability")) {
+                    damage = 0;
+                }
+
+                cliHandler.displayAction(sourceName, "BasicAttack", getDisplayName(t),
+                        before, after, source.getAttack(), t.getDefense(), damage);
+
+                if (damage == 0 && t.isAlive()) {
+                    cliHandler.displayNullifiedBasicAttack(sourceName, getDisplayName(t),
+                            getDisplayName(t), t.getCurrentHP());
+                }
+            }
+
+        } else if (action instanceof ShieldBash) {
+            Combatant target = targets.get(0);
+            if (target != null && target.isAlive()) {
+                int hpBefore = target.getCurrentHP();
+                int damage = Math.max(0, source.getAttack() - target.getDefense());
+
+                battleEngine.executeTurn(source, action, targets);
+
+                int hpAfter = target.isAlive() ? target.getCurrentHP() : 0;
+                cliHandler.displayAction(sourceName, "Shield Bash", getDisplayName(target),
+                        hpBefore, hpAfter, source.getAttack(), target.getDefense(), damage);
+
+                if (target.isAlive() && (target.hasStatusEffect("Stun") || target.hasStatusEffect("StunEffect"))) {
+                    cliHandler.displayStatusEffect(getDisplayName(target), "Stun", 2);
+                }
+
+                CooldownTracker tracker = cooldownTrackers.get(source);
+                if (tracker != null) {
+                    cliHandler.displayCooldownSet(tracker.getTurnsRemaining());
+                } 
+                else {
+                    cliHandler.displayNewline();
+                }
+            }
+
+        } else if (action instanceof ArcaneBlast) {
+            int attackerATK = source.getAttack();
+
+            Map<Combatant, Integer> hpBefore = new HashMap<>();
+            for (Combatant t : targets) {
+                if (t != null && t.isAlive()) {
+                    hpBefore.put(t, t.getCurrentHP());
+                }
+            }
+
+            battleEngine.executeTurn(source, action, targets);
+
+            int kills = 0;
+            List<String> resultStrings = new ArrayList<>();
+            boolean goblinSurvives = false;
+
+            for (Combatant t : targets) {
+                if (t == null || !hpBefore.containsKey(t)) continue;
+
+                int before = hpBefore.get(t);
+                int after = t.isAlive() ? t.getCurrentHP() : 0;
+                int damage = Math.max(0, attackerATK - t.getDefense());
+                String damageCalc = attackerATK + "-" + t.getDefense() + "=" + damage;
+
+                if (!t.isAlive()) {
+                    resultStrings.add(getDisplayName(t) + " " + damageCalc + " X Eliminated");
+                    kills++;
+                }
+                else {
+                    resultStrings.add(getDisplayName(t) + " " + damageCalc + " HP:" + before + "vs" + after);
+                    if (t instanceof Goblin) {
+                        goblinSurvives = true;
+                    }
+                }
+            }
+
+            CooldownTracker tracker = cooldownTrackers.get(source);
+            Integer cooldownRounds = (tracker != null) ? tracker.getTurnsRemaining() : null;
+
+            cliHandler.displayArcaneBlastSummary(sourceName, "Arcane Blast", resultStrings,
+                    attackerATK, kills, goblinSurvives, cooldownRounds);
+
+        } 
+        else if (action instanceof Defend) {
+            battleEngine.executeTurn(source, action, targets);
+
+        } 
+        else {
+            // fallback for anything else
+            battleEngine.executeTurn(source, action, targets);
+        }
     }
     
-    /**
-     * Gets the special skill action for a player.
-     */
     private Action getSpecialSkillAction(Combatant player) {
-        // If player is Warrior, return new ShieldBash
-        // Else if player is Wizard, return new ArcaneBlast
-        // Otherwise, return null
+        if (player instanceof Warrior) {
+            return new ShieldBash();
+        } 
+        else if (player instanceof Wizard) {
+            return new ArcaneBlast();
+        }
+        return null;
     }
     
-    /**
-     * Uses an item for the player.
-     */
     private void useItem(Combatant player, Item item) {
-        // NOTE: Keep all printing in CLIHandler only.
-        // This method should only coordinate logic + call CLI display methods.
-        // Get display name for player
-        
-        // If item is Potion:
-            // Capture HP before using item
-            // Use the item with empty targets list
-            // Calculate HP after and healed amount
-            // Display item usage with HP change format
-        
-        // Else if item is SmokeBomb:
-            // Use the item with empty targets list
-            // Display item usage with effect description
-            // Check if DamageNullifier effect is active (will show in end-of-round summary)
-        
-        // Else if item is PowerStone:
-            // Get special skill action for player
-            // If skill action is not null:
-                // Determine targets and skill name based on action type:
-                    // If ShieldBash: get enemy target selection, set skill name
-                    // If ArcaneBlast: set targets to all alive enemies, set skill name
-                // Display Power Stone usage header via CLIHandler.displayPowerStoneTriggered(...)
-                // Capture HP before for all targets
-                // Execute skill action directly (not through executeTurn to avoid cooldown)
-                // Display results based on action type:
-                    // If ShieldBash: display damage/stun through CLI handler methods only
-                    // If ArcaneBlast: call CLIHandler.displayArcaneBlastPowerStone(...)
-                // Display Power Stone consumed and cooldown unchanged via CLI handler helper
-                // Manually update status effects for player and all targets (since executeTurn wasn't used)
+        String displayName = getDisplayName(player);
+
+        if (item instanceof Potion) {
+            int hpBefore = player.getCurrentHP();
+            item.use(player, new ArrayList<>());
+            int hpAfter = player.getCurrentHP();
+            int healed = hpAfter - hpBefore;
+            cliHandler.displayItemUsage(displayName, "Potion",
+                    "HP " + hpBefore + " -> " + hpAfter + " (+" + healed + ")");
+
+        } else if (item instanceof SmokeBomb) {
+            item.use(player, new ArrayList<>());
+            cliHandler.displayItemUsage(displayName, "Smoke Bomb",
+                    "Enemy attacks deal 0 damage for 2 turns");
+
+        } else if (item instanceof PowerStone) {
+            Action skillAction = getSpecialSkillAction(player);
+            if (skillAction != null) {
+                List<Combatant> targets;
+                String skillName;
+
+                if (skillAction instanceof ShieldBash) {
+                    skillName = "Shield Bash";
+                    targets = new ArrayList<>();
+                    Combatant enemyTarget = cliHandler.selectEnemyTarget(battleEngine.getAliveEnemies());
+                    targets.add(enemyTarget);
+                } 
+                else if (skillAction instanceof ArcaneBlast) {
+                    skillName = "Arcane Blast";
+                    targets = battleEngine.getAliveEnemies();
+                } 
+                else {
+                    return;
+                }
+
+                cliHandler.displayPowerStoneTriggered(displayName, skillName);
+
+                // save hp before for display
+                Map<Combatant, Integer> hpBefore = new HashMap<>();
+                for (Combatant t : targets) {
+                    if (t != null && t.isAlive()) {
+                        hpBefore.put(t, t.getCurrentHP());
+                    }
+                }
+
+                // execute directly, skip executeTurn so cooldown doesn't trigger
+                skillAction.execute(player, targets);
+
+                if (skillAction instanceof ShieldBash) {
+                    Combatant target = targets.get(0);
+                    if (target != null && hpBefore.containsKey(target)) {
+                        int before = hpBefore.get(target);
+                        int after = target.isAlive() ? target.getCurrentHP() : 0;
+                        int damage = Math.max(0, player.getAttack() - target.getDefense());
+                        cliHandler.displayAction(displayName, "Shield Bash", getDisplayName(target),
+                                before, after, player.getAttack(), target.getDefense(), damage);
+                        if (target.isAlive() && (target.hasStatusEffect("Stun") || target.hasStatusEffect("StunEffect"))) {
+                            cliHandler.displayStatusEffect(getDisplayName(target), "Stun", 2);
+                        }
+                    }
+                } else if (skillAction instanceof ArcaneBlast) {
+                    int kills = 0;
+                    List<String> resultStrings = new ArrayList<>();
+                    boolean allDefeated = true;
+
+                    for (Combatant t : targets) {
+                        if (t == null || !hpBefore.containsKey(t)) continue;
+                        int before = hpBefore.get(t);
+                        int after = t.isAlive() ? t.getCurrentHP() : 0;
+                        int damage = Math.max(0, player.getAttack() - t.getDefense());
+                        String calc = damage + " dmg";
+
+                        if (!t.isAlive()) {
+                            resultStrings.add(getDisplayName(t) + ": " + calc + " X Eliminated");
+                            kills++;
+                        } 
+                        else {
+                            resultStrings.add(getDisplayName(t) + ": " + calc + " HP:" + before + "->" + after);
+                            allDefeated = false;
+                        }
+                    }
+
+                    cliHandler.displayArcaneBlastPowerStone(displayName, player.getAttack(),
+                            resultStrings, kills, allDefeated);
+                }
+
+                CooldownTracker tracker = cooldownTrackers.get(player);
+                int cd = (tracker != null) ? tracker.getTurnsRemaining() : 0;
+                cliHandler.displayPowerStoneConsumedAndCooldownUnchanged(cd);
+
+                // manually tick status effects since we didn't go through executeTurn
+                player.updateStatusEffects();
+                for (Combatant t : targets) {
+                    if (t != null) {
+                        t.updateStatusEffects();
+                    }
+                }
+            }
+        }
     }
-    
-    /**
-     * Checks if backup spawn should be triggered.
-     * Backup spawn triggers when all initial enemies are eliminated.
-     */
     private void checkBackupSpawn() {
-        // Check if backup hasn't been spawned yet and initial enemies list is not null
-            // Initialize flag to track if all initial enemies are eliminated
-            // Iterate through initial enemies:
-                // If any enemy is still alive, set flag to false and break
-            
-            // If all initial enemies are eliminated:
-                // Get backup wave enemies from level manager
-                // If backup enemies list is not empty:
-                    // Display backup spawn message with formatted enemy list
-                    // Add enemy labels for backup enemies in CLI handler
-                    // Add backup enemies to allEnemiesEver list
-                    // Add backup enemies to battle engine
-                    // Set backupSpawned flag to true
+        if (!backupSpawned && initialEnemies != null) {
+            boolean allDead = true;
+            for (Combatant e : initialEnemies) {
+                if (e.isAlive()) {
+                    allDead = false;
+                    break;
+                }
+            }
+
+            if (allDead) {
+                List<Combatant> backupEnemies = levelManager.getBackupWave(currentDifficulty);
+                if (!backupEnemies.isEmpty()) {
+                    cliHandler.displayMessage("Backup enemies arrive: " + formatEnemyList(backupEnemies));
+                    cliHandler.addEnemyLabels(backupEnemies);
+                    allEnemiesEver.addAll(backupEnemies);
+                    battleEngine.addEnemies(backupEnemies);
+                    backupSpawned = true;
+                }
+            }
+        }
     }
     
-    /**
-     * Formats a list of enemies for display.
-     */
     private String formatEnemyList(List<Combatant> enemies) {
-        // Create list to store formatted parts
-        // Iterate through enemies:
-            // Add formatted string "EnemyName (HP: MaxHP)" to parts list
-        // Join all parts with " + " separator and return
+        List<String> parts = new ArrayList<>();
+        for (Combatant e : enemies) {
+            parts.add(e.getName() + " (HP: " + e.getMaxHP() + ")");
+        }
+        return String.join(" + ", parts);
     }
     
-    /**
-     * Checks and displays status effect expiration messages.
-     */
     private void checkStatusEffectExpiration(Combatant combatant) {
-        // Store whether combatant had Stun effect before update
-        // Store whether combatant had DamageZeroEffect effect before update
-        
-        // Update status effects for combatant
-        
-        // If combatant had Stun but doesn't have it now, call CLIHandler.displayStunExpires(...)
-        // If combatant had DamageZeroEffect but doesn't have it now, call CLIHandler.displaySmokeBombExpires(...)
-        // Do not print directly in GameManager
+        boolean hadStun = combatant.hasStatusEffect("Stun") || combatant.hasStatusEffect("StunEffect");
+        boolean hadSmokeBomb = combatant.hasStatusEffect("DamageZeroEffect") || combatant.hasStatusEffect("SmokeBombInvulnerability");
+
+        combatant.updateStatusEffects();
+
+        boolean hasStunNow = combatant.hasStatusEffect("Stun") || combatant.hasStatusEffect("StunEffect");
+        boolean hasSmokeBombNow = combatant.hasStatusEffect("DamageZeroEffect") || combatant.hasStatusEffect("SmokeBombInvulnerability");
+
+        if (hadStun && !hasStunNow) {
+            cliHandler.displayStunExpires();
+        }
+        if (hadSmokeBomb && !hasSmokeBombNow) {
+            cliHandler.displaySmokeBombExpires();
+        }
     }
     
-    /**
-     * Updates cooldowns for all tracked combatants.
-     */
     private void updateCooldowns() {
-        // Iterate through all cooldown trackers in the map:
-            // Decrement cooldown for each tracker
+        for (CooldownTracker tracker : cooldownTrackers.values()) {
+            tracker.decrementCooldown();
+        }
     }
     
-    /**
-     * Displays end of round summary.
-     */
     private void displayEndOfRound() {
-        // Create list of all combatants (player + all enemies ever)
-        // Initialize item counters to 0
-        // Get player inventory from map
-        // If inventory is not null:
-            // Count each item type in inventory
-            // Set hasItems flag based on whether inventory is empty
-        
-        // Get cooldown rounds from player's cooldown tracker (0 if no tracker)
-        
-        // Build enemy labels map by iterating through all enemies ever:
-            // Get label from CLI handler
-            // If label exists and is different from enemy name, add to map
-        
-        // Call CLI handler to display end of round summary with all collected information
+        List<Combatant> everyone = new ArrayList<>();
+        everyone.add(player);
+        everyone.addAll(allEnemiesEver);
+
+        int potionCount = 0, smokeBombCount = 0, powerStoneCount = 0;
+        boolean hasItems = false;
+
+        List<Item> inventory = playerInventories.get(player);
+        if (inventory != null) {
+            for (Item item : inventory) {
+                if (item instanceof Potion) potionCount++;
+                else if (item instanceof SmokeBomb) smokeBombCount++;
+                else if (item instanceof PowerStone) powerStoneCount++;
+            }
+            hasItems = !inventory.isEmpty();
+        }
+
+        CooldownTracker tracker = cooldownTrackers.get(player);
+        int cooldownRounds = (tracker != null) ? tracker.getTurnsRemaining() : 0;
+
+        Map<Combatant, String> labelMap = new HashMap<>();
+        for (Combatant e : allEnemiesEver) {
+            String label = cliHandler.getEnemyLabel(e);
+            if (label != null && !label.equals(e.getName())) {
+                labelMap.put(e, label);
+            }
+        }
+
+        cliHandler.displayEndOfRound(roundsSurvived, everyone, labelMap,
+                potionCount, smokeBombCount, powerStoneCount, cooldownRounds, hasItems, player);
     }
     
-    /**
-     * Gets display name for a combatant.
-     */
     private String getDisplayName(Combatant combatant) {
-        // If combatant is Goblin or Wolf:
-            // Get enemy label from CLI handler
-            // Return formatted string "EnemyType Label" (e.g., "Goblin A")
-        // Otherwise, return combatant's name
+        if (combatant instanceof Goblin || combatant instanceof Wolf) {
+            String label = cliHandler.getEnemyLabel(combatant);
+            return combatant.getClass().getSimpleName() + " " + label;
+        }
+        return combatant.getName();
     }
     
-    /**
-     * Displays the completion screen with statistics.
-     */
     private void displayCompletion() {
-        // Get final game state from battle engine
-        // Get remaining HP and max HP from player (0 if player is null)
+        GameState finalState = battleEngine.getGameState();
+        int remainingHP = (player != null) ? player.getCurrentHP() : 0;
+        int maxHP = (player != null) ? player.getMaxHP() : 0;
+
+        int potionCount = 0, smokeBombCount = 0, powerStoneCount = 0;
+        List<Item> inventory = playerInventories.get(player);
+        if (inventory != null) {
+            for (Item item : inventory) {
+                if (item instanceof Potion) potionCount++;
+                else if (item instanceof SmokeBomb) smokeBombCount++;
+                else if (item instanceof PowerStone) powerStoneCount++;
+            }
+        }
         
-        // Initialize item counters to 0
-        // Get player inventory from map
-        // If inventory is not null:
-            // Count each item type in inventory
-        
-        // Call CLI handler to display completion screen with all statistics
+        cliHandler.displayCompletionScreen(finalState, roundsSurvived, remainingHP, maxHP,
+                potionCount, smokeBombCount, powerStoneCount, player);
     }
 }
