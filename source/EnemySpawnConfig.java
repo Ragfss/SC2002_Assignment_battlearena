@@ -1,30 +1,25 @@
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Configuration for enemy spawning at a difficulty level.
- * Contains initial wave and backup wave enemy types.
- */
+// Holds enemy wave setup for a given difficulty
+// Each difficult has an initial wave and an optional backup wave
 public class EnemySpawnConfig {
     private List<EnemyType> initialWave;
     private List<EnemyType> backupWave;
     
     public EnemySpawnConfig(List<EnemyType> initialWave, List<EnemyType> backupWave) {
-        // Create defensive copies of the initial wave and backup wave lists
-        // Store them in instance variables
+        this.initialWave = new ArrayList<>(initialWave);
+        this.backupWave = new ArrayList<>(backupWave);
     }
     
     public List<EnemyType> getInitialWave() {
-        // Return a defensive copy of the initial wave list
+        return new ArrayList<>(initialWave);
     }
     
     public List<EnemyType> getBackupWave() {
-        // Return a defensive copy of the backup wave list
+        return new ArrayList<>(backupWave);
     }
     
-    /**
-     * Enum for enemy types.
-     */
     public enum EnemyType {
         GOBLIN,
         WOLF
