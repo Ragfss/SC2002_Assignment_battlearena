@@ -94,6 +94,15 @@ public class CLIHandler {
         System.out.println("____________________");
         System.out.println();
         System.out.println(" Available Players: ");
+        System.out.println();
+        System.out.println("        Warrior                     Wizard");
+        System.out.println();
+        System.out.println("           ^                          .");
+        System.out.println("           |                          |");
+        System.out.println("         ==+==                        |");
+        System.out.println("           |                          |");
+        System.out.println("         sword                      wand");
+        System.out.println();
         System.out.println(" 1. Warrior - High HP/DEF, Special: Shield Bash (stuns enemy) ");
         System.out.println(" 2. Wizard - High ATK, Special: Arcane Blast (hits all enemies, +10 ATK per kill) ");
         System.out.println();
@@ -103,8 +112,34 @@ public class CLIHandler {
         System.out.println(" 3. Hard ");
         System.out.println();
         System.out.println("Enemy Types:");
+        System.out.println();
         System.out.println(" Goblin - Low HP/DEF, fast");
+        System.out.println();
+        System.out.println("             ,      ,");
+        System.out.println("            /(.-\"\"-.)\\");
+        System.out.println("        |\\  \\/      \\/  /|");
+        System.out.println("        | \\ / =.  .= \\ / |");
+        System.out.println("        \\( \\   o\\/o   / )/");
+        System.out.println("         \\_, '-/  \\-' ,_/");
+        System.out.println("           /   \\__/   \\");
+        System.out.println("           \\ \\__/\\__/ /");
+        System.out.println("         ___\\ \\|--|/ /___");
+        System.out.println("       /`    \\      /    `\\");
+        System.out.println("     /       '----'       \\");
+        System.out.println();
         System.out.println(" Wolf - Higher ATK/SPD, more aggressive");
+        System.out.println();
+        System.out.println("                     .");
+        System.out.println("                    / V\\");
+        System.out.println("                  / `  /");
+        System.out.println("                 <<   |");
+        System.out.println("                 /    |");
+        System.out.println("               /      |");
+        System.out.println("             /        |");
+        System.out.println("           /    \\  \\ /");
+        System.out.println("          (      ) | |");
+        System.out.println("  ________|   _/_  | |");
+        System.out.println("<__________\\______)\\__)");
         System.out.println();
 
     }
@@ -121,10 +156,11 @@ public class CLIHandler {
         // Default: return null
 
         System.out.println("Select A Player (1 or 2):");
+        System.out.println();
         System.out.println(" 1. Warrior ");
         System.out.println(" 2. Wizard ");
-        int choice = scanner.nextInt();
-
+        System.out.println();
+        int choice = readInt(1, 2);
 
         switch (choice) {
             case 1:
@@ -150,11 +186,12 @@ public class CLIHandler {
         // Default: return Difficulty.EASY
 
         System.out.println(" Select Difficulty (1-3):");
+        System.out.println();
         System.out.println(" 1. Easy");
         System.out.println(" 2. Medium");
         System.out.println(" 3. Hard");
-        int choice = scanner.nextInt();
-
+        System.out.println();
+        int choice = readInt(1, 3);
 
         switch (choice) {
             case 1:
@@ -173,8 +210,9 @@ public class CLIHandler {
     public void displayRoundHeader(int round) {
         // Display empty line
         // Display formatted round header with round number
-                System.out.println();
-                System.out.println("Round " + round );
+        System.out.println();
+        System.out.println("Round " + round);
+        System.out.println();
     }
     
     /**
@@ -188,11 +226,13 @@ public class CLIHandler {
 
         String damage_calc = attackerATK + "-" + targetDEF + "=" + damage;
         if ( hpAfter <= 0) {
-            System.out.println(actor + "-" + actionName + "-" + target + ":" + damage_calc + "X Eliminated");
+            System.out.println(actor + " - " + actionName + " - " + target + ": " + damage_calc + " X Eliminated");
         }
         else {
-            System.out.println(actor + "-" + actionName + target + ":" + damage_calc + "|" + target + "HP:" + hpBefore + "vs"+ hpAfter);
+            System.out.println(actor + " - " + actionName + " - " + target + ": " + damage_calc + " | " + target + " HP: " + hpBefore + " vs " + hpAfter);
         }
+        System.out.println();
+        System.out.println();
     }
     
     /**
@@ -315,9 +355,7 @@ public class CLIHandler {
         
         // Join all status parts with " | " separator and display
 
-        System.out.print("End of Round " + round + ": ");
         List<String> parts = new ArrayList<>();
-
 
         // iterating through players
         for (Combatant c : combatants) {
@@ -338,7 +376,6 @@ public class CLIHandler {
         // creation of enemy list
         List<Combatant> enemyList = new ArrayList<>();
 
-
         for (Combatant c : combatants) {
             if (c instanceof Goblin || c instanceof Wolf) {
                 enemyList.add(c);
@@ -351,7 +388,6 @@ public class CLIHandler {
             String bb = enemyLabels.getOrDefault(b, "");
             return aa.compareTo(bb);
         });
-
 
         for (Combatant e : enemyList) {
             String type = e.getClass().getSimpleName();
@@ -371,64 +407,59 @@ public class CLIHandler {
                 }
             }
             parts.add(status);
-
-            // Inventory
-
-            if (player instanceof Warrior) {
-
-                String potionText  = (potionCount  == 0) ? "Potion: consumed" : "Potion: "   + potionCount;
-                String smokeText   = (smokeBombCount == 0) ? "Smoke Bomb: consumed" : "Smoke Bomb: " + smokeBombCount;
-
-                parts.add(potionText);
-
-                parts.add(smokeText);
-
-                if (!hasItems && potionCount == 0 && smokeBombCount == 0) {
-                    parts.add("Item action no longer available");
-                }
-            }
-
-            else if (player instanceof Wizard) {
-
-                String stoneText  = (powerStoneCount == 0) ? "Power Stone: consumed" : "Power Stone: " + powerStoneCount;
-                String potionText = (potionCount    == 0) ? "Potion: consumed"      : "Potion: "      + potionCount;
-
-
-                parts.add(stoneText);
-                parts.add(potionText);
-
-
-                if (!hasItems && powerStoneCount == 0 && potionCount == 0) {
-                    parts.add("Item action no longer available");
-                }
-                if (player.getAttack() > 50) {
-                    parts.add("ATK: " + player.getAttack());
-                }
-            }
-
-            // Cooldown
-
-            String cooldownText;
-
-            if (cooldownRounds == 0) {
-                cooldownText = "Cooldown: 0 Round";
-            }
-
-            else if (cooldownRounds == 1) {
-                cooldownText = "Cooldown: 1 round";
-            }
-
-            else {
-                cooldownText = "Cooldown: " + cooldownRounds + " rounds";
-            }
-
-            parts.add(cooldownText);
-
-            System.out.println(String.join(" | ", parts));
         }
 
+        if (player instanceof Warrior) {
+
+            String potionText  = (potionCount  == 0) ? "Potion: consumed" : "Potion: "   + potionCount;
+            String smokeText   = (smokeBombCount == 0) ? "Smoke Bomb: consumed" : "Smoke Bomb: " + smokeBombCount;
+
+            parts.add(potionText);
+
+            parts.add(smokeText);
+
+            if (!hasItems && potionCount == 0 && smokeBombCount == 0) {
+                parts.add("Item action no longer available");
+            }
+        }
+
+        else if (player instanceof Wizard) {
+
+            String stoneText  = (powerStoneCount == 0) ? "Power Stone: consumed" : "Power Stone: " + powerStoneCount;
+            String potionText = (potionCount    == 0) ? "Potion: consumed"      : "Potion: "      + potionCount;
 
 
+            parts.add(stoneText);
+            parts.add(potionText);
+
+
+            if (!hasItems && powerStoneCount == 0 && potionCount == 0) {
+                parts.add("Item action no longer available");
+            }
+            if (player.getAttack() > 50) {
+                parts.add("ATK: " + player.getAttack());
+            }
+        }
+
+        String cooldownText;
+
+        if (cooldownRounds == 0) {
+            cooldownText = "Cooldown: 0 Round";
+        }
+
+        else if (cooldownRounds == 1) {
+            cooldownText = "Cooldown: 1 round";
+        }
+
+        else {
+            cooldownText = "Cooldown: " + cooldownRounds + " rounds";
+        }
+
+        parts.add(cooldownText);
+
+        System.out.println();
+        System.out.println("End of Round " + round + ": " + String.join(" | ", parts));
+        System.out.println();
 
 
 
@@ -539,6 +570,7 @@ public class CLIHandler {
         // Read and return integer input using readInt method
 
         System.out.println("Select Action:");
+        System.out.println();
         System.out.println("1. Basic Attack");
         System.out.println("2. Defend");
 
@@ -550,6 +582,8 @@ public class CLIHandler {
         if (hasItems) {
             System.out.println("4. Use Item");
         }
+
+        System.out.println();
 
         int maxOption = hasItems ? 4 : (canUseSkill ? 3 : 2);
         return readInt(1, maxOption);
@@ -574,6 +608,7 @@ public class CLIHandler {
         // Return the enemy at (choice - 1) index from alive enemies list
 
         System.out.println("Select Target:");
+        System.out.println();
         List<Combatant> aliveEnemies = new ArrayList<>();
 
         for (Combatant e : enemies) {
@@ -591,7 +626,10 @@ public class CLIHandler {
             System.out.printf(" %d. %s%s  HP: %d/%d%n", i + 1, type, label, e.getCurrentHP(), e.getMaxHP());
         }
 
+        System.out.println();
+
         int choice = readInt(1, aliveEnemies.size());
+        System.out.println();
         return aliveEnemies.get(choice - 1);
 
 

@@ -54,12 +54,12 @@ public class BattleEngine {
     }
     
     public GameState getGameState() {
-        List <GameState.Combatant Snapshot> snapshots = combatants.stream().map(GameState.CombatantSnapshot::new).collect(Collectors.toList());
+        List<GameState.CombatantSnapshot> snapshots = combatants.stream().map(GameState.CombatantSnapshot::new).collect(Collectors.toList());
         return new GameState(snapshots, currentRound, battleResult);
     }
     
     public List<Combatant> getAlivePlayers() {
-        return players.stream().filter(Combatant::isAlive).collect(Collectors.toList())
+        return players.stream().filter(Combatant::isAlive).collect(Collectors.toList());
     }
     
     public List<Combatant> getAliveEnemies() {
@@ -67,7 +67,7 @@ public class BattleEngine {
     }
     
     public boolean isBattleOver() {
-        return battleResult != GameState.BattleResult.ONGOING
+        return battleResult != GameState.BattleResult.ONGOING;
     }
     
     public GameState startRound() {
@@ -78,7 +78,7 @@ public class BattleEngine {
         currentRound++;
 
         // clear out dead combatants from the active list
-        combatants.removeIf( c :: !c.isAlive());
+        combatants.removeIf(c -> !c.isAlive());
 
         for (Combatant c : combatants) {
             c.updateStatusEffects();
@@ -87,7 +87,7 @@ public class BattleEngine {
         checkBattleEnd();
 
         GameState state = getGameState();
-        notifyObservers(obs :: obs.onTurnStarted(state))
+        notifyObservers(obs -> obs.onTurnStarted(state));
         return state;
     }
         

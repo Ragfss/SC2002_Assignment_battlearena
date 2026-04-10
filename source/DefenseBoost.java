@@ -6,7 +6,6 @@ public class DefenseBoost implements StatusEffect {
     private int duration;
     private static final int BOOST_AMOUNT = 10;
     private static final String EFFECT_NAME = "DefenseBoost";
-    private int originalDefence;
     
     public DefenseBoost() {
         // Initialize duration to 2 (current round + next round)
@@ -37,21 +36,12 @@ public class DefenseBoost implements StatusEffect {
     
     @Override
     public void apply(Combatant combatant) {
-        // Validate that combatant is not null
-        if (combatant != null)
-        {
-            // If valid, store the combatant's current defense value as original defense
-            // Note: Defense boost is applied dynamically in getDefense() method
-            originalDefence = combatant.getDefense();
-        }
-
+        // Boost is applied in Combatant.getDefense() while this effect is active.
     }
     
     @Override
     public void remove(Combatant combatant) {
-        // Defense boost is removed when effect expires
-        // The combatant's defense returns to original value
-        combatant.setDefense(this.originalDefence);
+        // Boost is applied in Combatant.getDefense(); removing the effect restores base behavior.
     }
     
     @Override

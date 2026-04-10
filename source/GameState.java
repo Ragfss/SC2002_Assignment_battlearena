@@ -19,11 +19,11 @@ public class GameState {
     }
     
     public int getCurrentRound() {
-        return currentRound
+        return currentRound;
     }
     
     public BattleResult getResult() {
-        return result
+        return result;
     }
     
     // Copy of a combatant's stats at one point in time
@@ -43,8 +43,8 @@ public class GameState {
             this.maxHP = combatant.getMaxHP();
             this.attack = combatant.getAttack();
             this.defense = combatant.getDefense();
-            this.speed = combatant.getSpeed()
-            this.isAlive = combatant.isAlive()
+            this.speed = combatant.getSpeed();
+            this.isAlive = combatant.isAlive();
 
             this.activeEffects = new ArrayList<>();
             for (StatusEffect effect : combatant.getActiveEffects()) {
@@ -58,7 +58,7 @@ public class GameState {
         public int getAttack() {return attack;}
         public int getDefense() {return defense;}
         public int getSpeed() {return speed;}
-        public boolean isAlive(return isAlive;)
+        public boolean isAlive() { return isAlive; }
         public List<String> getActiveEffects() {
             return new ArrayList<>(activeEffects);
         }

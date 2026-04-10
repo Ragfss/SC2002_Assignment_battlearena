@@ -32,7 +32,9 @@ public class GameManager {
 
         while (playing) {
             cliHandler.displayLoadingScreen();
+            cliHandler.displayNewline();
             player = cliHandler.selectPlayer();
+            cliHandler.displayNewline();
             Difficulty difficulty = cliHandler.selectDifficulty();
 
             initializeGame(player, difficulty);

@@ -23,6 +23,10 @@ public abstract class Combatant {
     public int getMaxHP() { return maxHP; }
     public int getCurrentHP() { return currentHP; }
     public int getAttack() { return attack; }
+
+    protected void setAttack(int attack) {
+        this.attack = attack;
+    }
     public int getSpeed() { return speed; }
     public String getName() { return name; }
     
