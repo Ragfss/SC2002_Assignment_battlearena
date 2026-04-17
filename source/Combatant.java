@@ -52,7 +52,7 @@ public abstract class Combatant {
         if (hasStatusEffect("DamageZeroEffect") || hasStatusEffect("SmokeBombInvulnerability")) {
             damage = 0;
         }
-        int effectiveDamage = Math.max(0, damage - getDefense()); 
+        int effectiveDamage = Math.max(0, damage); 
         setCurrentHP(this.currentHP - effectiveDamage);
     }
 
